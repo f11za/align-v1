@@ -21,20 +21,27 @@ export function UserProfile() {
   }
 
   return (
-    <div className="mt-auto p-4 border-t border-sage-border bg-slate-50/50 rounded-b-3xl">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-8 h-8 rounded-full bg-sage-primary flex items-center justify-center text-white font-bold text-xs">
+    <div className="mt-auto rounded-3xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sage-primary font-bold text-sm shrink-0">
             {userEmail?.[0].toUpperCase() || "P"}
           </div>
-          <div className="flex flex-col overflow-hidden">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Practitioner</p>
-            <p className="text-xs font-bold text-slate-700 truncate">{userEmail}</p>
+
+          <div className="flex min-w-0 flex-col">
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/50">
+              Practitioner
+            </p>
+
+            <p className="truncate text-sm font-semibold text-white">
+              {userEmail}
+            </p>
           </div>
         </div>
-        <button 
+
+        <button
           onClick={handleLogout}
-          className="w-full mt-2 text-left px-2 py-2 text-xs font-bold text-red-400 hover:text-red-600 transition-colors"
+          className="rounded-xl bg-white/10 px-3 py-2 text-left text-xs font-bold text-white/75 transition hover:bg-white/20 hover:text-white"
         >
           Sign Out of Session
         </button>
