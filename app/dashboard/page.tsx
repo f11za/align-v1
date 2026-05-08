@@ -40,11 +40,15 @@ export default function Dashboard() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        {['Total Encounters', 'Pending SOAP', 'Recent Sessions'].map((label, i) => (
-          <div key={label} className="bg-white p-6 rounded-2xl border border-sage-border shadow-sm">
-            <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">{label}</p>
+        {[
+          { label: 'Total Encounters', value: encounters.length },
+          { label: 'Clinical Minutes Saved', value: encounters.length * 15 }, // Assume 15 mins saved per note
+          { label: 'Verified for Vault', value: encounters.length }
+        ].map((stat) => (
+          <div key={stat.label} className="bg-white p-6 rounded-2xl border border-sage-border shadow-sm">
+            <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">{stat.label}</p>
             <p className="text-4xl font-bold text-sage-primary mt-2">
-              {[encounters.length, encounters.length, encounters.length][i]}
+              {stat.value}
             </p>
           </div>
         ))}

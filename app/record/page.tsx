@@ -17,9 +17,19 @@ export default function RecordPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // 1. Add a new state to track if the note was touched
+  const [isEdited, setIsEdited] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   
   const socketRef = useRef<any>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+
+  // 2. Update your onChange to set the 'isEdited' flag to true
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setSoapNote(e.target.value);
+    if (!isEdited) setIsEdited(true); // Once they type, it's officially 'edited'
+  };
 
   // 1. GENERATE SOAP (with Gemini Retry Logic)
   const generateSOAP = async () => {
@@ -50,80 +60,41 @@ export default function RecordPage() {
   };
 
   // 2. SAVE TO DATABASE (The "Fully Secure" Link)
-  // const handleSave = async () => {
-  //   if (!soapNote) return;
-  //   setLoading(true);
-
-  //   try {
-  //     const { data: { user } } = await supabase.auth.getUser();
-
-  //     if (!user) {
-  //       alert("Session expired. Please log in again.");
-  //       return router.push('/login');
-  //     }
-
-  //     const { error: saveError } = await supabase
-  //       .from('soap_notes')
-  //       .insert([
-  //         { 
-  //           practitioner_id: user.id, // THE CRITICAL LINK
-  //           content: soapNote, 
-  //           transcript: transcript,
-  //           patient_name: "New Patient Encounter" // Optional: Add an input field for this later
-  //         },
-  //       ]);
-
-  //     if (saveError) {
-  //       alert("Database Error: " + saveError.message);
-  //     } else {
-  //       alert("Note archived in Patient Vault!");
-  //       router.push('/dashboard');
-  //     }
-  //   } catch (err) {
-  //     console.error("Save error:", err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const handleSave = async () => {
-  if (!soapNote) return;
-  setLoading(true);
+    if (!soapNote) return;
+    setLoading(true);
 
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return router.push('/login');
+      if (!user) return router.push('/login');
 
-    const { error: saveError } = await supabase
-      .from('soap_notes')
-      .insert([
-        { 
-          practitioner_id: user.id, 
-          raw_ai_output: soapNote, // Matches your DB column
-          subjective: "See raw output", // Temporary placeholders to satisfy the schema
-          objective: "See raw output",
-          assessment: "See raw output",
-          plan: "See raw output",
-          // Note: 'transcript' isn't in your column list, 
-          // so we'll leave it out for now or add it to DB later
-        },
-      ]);
+      const { error: saveError } = await supabase
+        .from('soap_notes')
+        .insert([
+          { 
+            practitioner_id: user.id, 
+            raw_ai_output: soapNote,
+            is_edited: isEdited, // THIS IS THE KEY FLAG
+            subjective: "Transcribed session",
+            objective: "See raw output",
+            assessment: "See raw output",
+            plan: "See raw output",
+          },
+        ]);
 
-    if (saveError) {
-      alert("Database Error: " + saveError.message);
-    } else {
-      alert("Note archived in Patient Vault!");
-      router.push('/dashboard');
+      if (saveError) {
+        alert("Database Error: " + saveError.message);
+      } else {
+        alert("Note archived in Patient Vault!");
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Save error:", err);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
+  };
 
   // 3. DEEPGRAM LOGIC
   const startSession = async () => {
@@ -249,31 +220,54 @@ export default function RecordPage() {
                 </button>
               </div>
             ) : (
-              <textarea 
-                value={soapNote.replace(/\*\*/g, "")}
-                onChange={(e) => setSoapNote(e.target.value)}
-                /* These classes now mirror the transcript box exactly */
-                className="w-full h-[600px] p-6 bg-slate-50 border border-sage-border rounded-2xl shadow-inner focus:ring-1 focus:ring-sage-primary/30 text-slate-700 leading-relaxed text-sm resize-none outline-none font-sans"
-                placeholder="AI structured output will appear here..."
-              />
+              <>
+                {/* Update the textarea to reflect the mode */}
+                <textarea 
+                  value={soapNote.replace(/[#*]/g, "").trim()} 
+                  onChange={handleTextChange}
+                  readOnly={!isEditMode} // Locked until they click 'Edit'
+                  className={`w-full h-[600px] p-6 rounded-2xl shadow-inner transition-all text-sm font-sans leading-relaxed resize-none outline-none
+                    ${isEditMode ? 'bg-white border-amber-300 ring-2 ring-amber-100' : 'bg-slate-50 border-sage-border'}`}
+                  placeholder="AI structured output will appear here..."
+                />
+              </>
             )}
 
             {!error && (
-              <div className="flex gap-3">
-                <button 
-                  onClick={handleSave}
-                  disabled={loading}
-                  className="flex-[2] bg-sage-primary text-white py-4 rounded-xl font-bold shadow-md hover:opacity-90 transition-all disabled:bg-slate-300 text-sm"
-                >
-                  {loading ? "Archiving..." : "Verify & Save to Vault"}
-                </button>
-                <button 
-                  onClick={() => {setSoapNote(""); setTranscript(""); setError(null);}}
-                  className="flex-1 py-4 border border-sage-border rounded-xl font-bold text-slate-400 hover:bg-slate-50 text-sm"
-                >
-                  Discard
-                </button>
-              </div>
+              <>
+                <div className="flex gap-3 mt-4">
+                  {/* The New Edit Button */}
+                  {!isEditMode ? (
+                    <button 
+                      onClick={() => setIsEditMode(true)}
+                      className="flex-1 border border-sage-primary text-sage-primary py-4 rounded-xl font-bold hover:bg-sage-light/10 transition-all text-sm"
+                    >
+                      Edit Note
+                    </button>
+                  ) : (
+                    <div className="flex-1 bg-amber-50 border border-amber-200 py-2 px-4 rounded-xl flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tight">Manual Edit Mode Active</span>
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={handleSave}
+                    disabled={loading}
+                    className="flex-[2] bg-sage-primary text-white py-4 rounded-xl font-bold shadow-md hover:opacity-90 transition-all disabled:bg-slate-300 text-sm"
+                  >
+                    {loading ? "Archiving..." : "Verify & Save to Vault"}
+                  </button>
+                </div>
+
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => {setSoapNote(""); setTranscript(""); setError(null); setIsEdited(false); setIsEditMode(false);}}
+                    className="flex-1 py-4 border border-sage-border rounded-xl font-bold text-slate-400 hover:bg-slate-50 text-sm"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>

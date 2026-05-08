@@ -72,7 +72,7 @@ export default function LandingPage() {
             </div>
 
             <h2 className="text-5xl font-black leading-tight tracking-tight md:text-6xl">
-              Transform clinical conversations into structured SOAP notes.
+              Transform clinical conversations into structured medical notes.
             </h2>
 
             <p className="mt-6 text-lg leading-relaxed text-white/75">
@@ -166,7 +166,7 @@ export default function LandingPage() {
           </div>
 
           <div className="rounded-3xl border border-white/15 bg-white/10 p-6 backdrop-blur">
-            <h3 className="font-bold">Structured SOAP Notes</h3>
+            <h3 className="font-bold">Structured Medical Notes</h3>
             <p className="mt-2 text-sm leading-relaxed text-white/70">
               Convert conversations into organized documentation ready for review.
             </p>
