@@ -35,7 +35,7 @@ export default function Dashboard() {
       <header className="mb-10">
         <h1 className="text-3xl font-bold text-slate-900">Clinical Dashboard</h1>
         <p className="text-slate-500">
-          Welcome back. You have {encounters.length} recent scribe sessions to review.
+          Welcome back. You have {encounters.length} recent scribe sessions.
         </p>
       </header>
 

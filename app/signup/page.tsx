@@ -12,12 +12,35 @@ export default function SignupPage() {
   const [specialty, setSpecialty] = useState('')
   const [facilityName, setFacilityName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
   const supabase = createClient()
   const router = useRouter()
 
+  const validatePassword = (password: string) => {
+    const requirements = {
+      length: password.length >= 8,
+      hasNumber: /[0-9]/.test(password),
+      hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    }
+
+    if (!requirements.length) return "Password must be at least 8 characters."
+    if (!requirements.hasNumber) return "Password must include at least one number."
+    if (!requirements.hasSpecial) return "Password must include a special character."
+
+    return null
+  }
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+
+    const passwordError = validatePassword(password)
+    if (passwordError) {
+      setError(passwordError)
+      return
+    }
+
     setLoading(true)
 
     const { data, error: authError } = await supabase.auth.signUp({
@@ -33,7 +56,7 @@ export default function SignupPage() {
     })
 
     if (authError) {
-      alert(authError.message)
+      setError(authError.message)
       setLoading(false)
       return
     }
@@ -41,18 +64,21 @@ export default function SignupPage() {
     if (data.user) {
       const { error: profileError } = await supabase
         .from('practitioners')
-        .insert([
-          { 
-            id: data.user.id,
-            full_name: fullName,
-            email,
-            specialty,
-            facility_name: facilityName,
-          }
-        ])
+        .upsert({
+          id: data.user.id,
+          full_name: fullName,
+          email: email,
+          specialty: specialty,
+          facility_name: facilityName,
+        }, { 
+          onConflict: 'id'
+        })
 
       if (profileError) {
         console.error("Database profile error:", profileError.message)
+        setError("We ran into an issue setting up your profile. Please try logging in.")
+        setLoading(false)
+        return
       }
     }
 
@@ -132,6 +158,12 @@ export default function SignupPage() {
               required
             />
           </div>
+
+          {error && (
+            <p className="text-sm font-medium text-red-500 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+              {error}
+            </p>
+          )}
           
           <button 
             type="submit" 

@@ -173,7 +173,7 @@ export default function RecordPage() {
                 />
                 <span className="text-slate-800 font-medium leading-tight text-sm">
                   I confirm verbal consent for this clinical recording.
-                  <p className="text-[10px] text-slate-400 mt-1 font-normal uppercase tracking-tighter">Required for UAE MOHAP Compliance</p>
+                  <p className="text-[10px] text-slate-400 mt-1 font-normal uppercase tracking-tighter">Required for Patient Safety & Data Privacy</p>
                 </span>
               </label>
             </div>
