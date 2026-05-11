@@ -18,6 +18,9 @@ export default function RecordPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Language Toggle State
+  const [language, setLanguage] = useState<'en' | 'tr'>('en');
+
   // 1. Add a new state to track if the note was touched
   const [isEdited, setIsEdited] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -40,12 +43,14 @@ export default function RecordPage() {
       const response = await fetch('/api/generate-soap', {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript }),
+        body: JSON.stringify({ 
+          transcript,
+          language: language // Changed 'lang' to 'language' to match your API route
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        // Catch the 503 Service Unavailable here
         throw new Error(errorData.message || "Gemini is busy.");
       }
 
@@ -53,7 +58,7 @@ export default function RecordPage() {
       setSoapNote(data.soapNote);
     } catch (err: any) {
       console.error(err);
-      setError("Medical AI is under high demand. Please try again or check your connection.");
+      setError("Medical AI is under high demand. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -107,10 +112,15 @@ export default function RecordPage() {
     if (!token) return console.error("Auth failed");
 
     const deepgram = createDeepgramClient(token)
+    
+    // LOGIC FIX: Use 'nova-2-medical' for English, but 'nova-2' for Turkish
+    const modelToUse = language === 'tr' ? 'nova-2' : 'nova-2-medical';
+
     const connection = deepgram.listen.live({
-      model: "nova-2-medical",
+      model: modelToUse, // Now dynamic!
       interim_results: true,
       smart_format: true,
+      language: language,
     })
 
     socketRef.current = connection
@@ -176,6 +186,33 @@ export default function RecordPage() {
                   <p className="text-[10px] text-slate-400 mt-1 font-normal uppercase tracking-tighter">Required for Patient Safety & Data Privacy</p>
                 </span>
               </label>
+            </div>
+          )}
+
+          {/* Language Toggle */}
+          {!isRecording && (
+            <div className="flex justify-center gap-2 mb-2">
+              <button 
+                onClick={() => setLanguage('en')}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                  language === 'en'
+                    ? 'bg-sage-primary text-white'
+                    : 'bg-slate-100 text-slate-400'
+                }`}
+              >
+                ENGLISH
+              </button>
+
+              <button 
+                onClick={() => setLanguage('tr')}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                  language === 'tr'
+                    ? 'bg-sage-primary text-white'
+                    : 'bg-slate-100 text-slate-400'
+                }`}
+              >
+                TÜRKÇE
+              </button>
             </div>
           )}
 
