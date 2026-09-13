@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { Suspense, useState, useRef } from 'react'
 import { createClient as createDeepgramClient, LiveTranscriptionEvents } from "@deepgram/sdk";
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 // Use your project's existing client utility instead of the deprecated library
 import { createClient as createSupabaseClient } from '@/utils/supabase/client'; 
 
@@ -27,7 +26,9 @@ const formatSoapText = (text: string) => {
   });
 };
 
-export default function RecordPage() {
+// The component that reads useSearchParams() must be rendered
+// inside a Suspense boundary.
+function RecordContent() {
   const router = useRouter();
   const supabase = createSupabaseClient(); // Consistent with your Signup/Login pages
 
@@ -387,5 +388,15 @@ export default function RecordPage() {
         </div>
       )}
     </div>
+  )
+}
+
+// Keep useSearchParams() behind Suspense so Next.js can prerender /record
+// successfully during the production build.
+export default function RecordPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading session...</div>}>
+      <RecordContent />
+    </Suspense>
   )
 }
