@@ -9,7 +9,7 @@ export default function Sidebar() {
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Start Scribing', href: '/record' },
+    { name: 'Start Scribing', href: '/intake' },
     { name: 'Patient Vault', href: '/vault' },
   ];
 

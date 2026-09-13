@@ -35,6 +35,17 @@ export async function POST(req: Request) {
       - Assessment: Clinical impression or diagnosis.
       - Plan: Next steps, medications, and follow-up.
 
+      FORMATTING RULES:
+      You must strictly use double asterisks to bold the main section headers and any critical sub-headers. 
+      Example:
+      **SUBJECTIVE:**
+      Patient presents with...
+
+      **OBJECTIVE:**
+      - **Vitals:** BP 120/80...
+
+      Do not use hash symbols (#) for headers, only use double asterisks (**).
+
       RULES:
       - Use professional medical terminology appropriate for ${outputLang}.
       - If details for a section are missing, write "Not discussed" (or "Görüşülmedi" if Turkish).
