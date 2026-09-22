@@ -55,36 +55,67 @@ function RecordContent() {
     if (!isEdited) setIsEdited(true);
   };
 
-  const generateSOAP = async () => {
-    setIsGenerating(true);
-    setError(null);
+  // const generateSOAP = async () => {
+  //   setIsGenerating(true);
+  //   setError(null);
 
-    try {
-      const response = await fetch('/api/generate-soap', {
-        method: 'POST',
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          transcript,
-          language: language,
-          patientName: `${firstName} ${lastName}`,
-          specialty: specialty
-        }),
-      });
+  //   try {
+  //     const response = await fetch('/api/generate-soap', {
+  //       method: 'POST',
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ 
+  //         transcript,
+  //         language: language,
+  //         patientName: `${firstName} ${lastName}`,
+  //         specialty: specialty
+  //       }),
+  //     });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Gemini is busy.");
-      }
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.message || "Gemini is busy.");
+  //     }
 
-      const data = await response.json();
-      setSoapNote(data.soapNote);
-    } catch (err: any) {
-      console.error(err);
-      setError("Medical AI is under high demand. Please try again.");
-    } finally {
-      setIsGenerating(false);
+  //     const data = await response.json();
+  //     setSoapNote(data.soapNote);
+  //   } catch (err: any) {
+  //     console.error(err);
+  //     setError("Medical AI is under high demand. Please try again.");
+  //   } finally {
+  //     setIsGenerating(false);
+  //   }
+  // };
+  const generateSOAP = async (transcriptOverride?: string) => {
+  const activeTranscript = transcriptOverride ?? transcript;
+  setIsGenerating(true);
+  setError(null);
+
+  try {
+    const response = await fetch('/api/generate-soap', {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        transcript: activeTranscript,
+        language,
+        patientName: `${firstName} ${lastName}`,
+        specialty,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Gemini is busy.");
     }
-  };
+
+    const data = await response.json();
+    setSoapNote(data.soapNote);
+  } catch (err: any) {
+    console.error(err);
+    setError(err.message || "Medical AI is under high demand. Please try again.");
+  } finally {
+    setIsGenerating(false);
+  }
+};
 
   const handleSave = async () => {
     if (!soapNote) return;
@@ -194,53 +225,106 @@ function RecordContent() {
     }
   };
 
-  const stopSession = async () => {
-    setIsRecording(false);
-    mediaRecorderRef.current?.stop();
+  // const stopSession = async () => {
+  //   setIsRecording(false);
+  //   mediaRecorderRef.current?.stop();
     
-    if (socketRef.current) {
-      socketRef.current.finish();
-      socketRef.current = null;
-    }
+  //   if (socketRef.current) {
+  //     socketRef.current.finish();
+  //     socketRef.current = null;
+  //   }
 
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
+  //   if (streamRef.current) {
+  //     streamRef.current.getTracks().forEach((track) => track.stop());
+  //     streamRef.current = null;
+  //   }
 
-    let activeTranscript = transcript;
+  //   let activeTranscript = transcript;
 
-    // For Arabic/Georgian, compile complete audio blob and transcribe cleanly on stop
-    if (language === 'ar' || language === 'ka') {
-      if (audioChunksRef.current.length > 0) {
-        setIsGenerating(true);
-        try {
-          const completeBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          const formData = new FormData();
-          formData.append('file', completeBlob, 'audio.webm');
-          formData.append('language', language);
+  //   // For Arabic/Georgian, compile complete audio blob and transcribe cleanly on stop
+  //   if (language === 'ar' || language === 'ka') {
+  //     if (audioChunksRef.current.length > 0) {
+  //       setIsGenerating(true);
+  //       try {
+  //         const completeBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+  //         const formData = new FormData();
+  //         formData.append('file', completeBlob, 'audio.webm');
+  //         formData.append('language', language);
 
-          const res = await fetch('/api/transcribe-chunk', {
-            method: 'POST',
-            body: formData,
-          });
-          const json = await res.json();
-          if (json.text) {
-            setTranscript(json.text.trim());
-            activeTranscript = json.text.trim();
-          }
-        } catch (e) {
-          console.error("Full audio transcription error:", e);
-        } finally {
-          setIsGenerating(false);
+  //         const res = await fetch('/api/transcribe-chunk', {
+  //           method: 'POST',
+  //           body: formData,
+  //         });
+  //         const json = await res.json();
+  //         if (json.text) {
+  //           setTranscript(json.text.trim());
+  //           activeTranscript = json.text.trim();
+  //         }
+  //       } catch (e) {
+  //         console.error("Full audio transcription error:", e);
+  //       } finally {
+  //         setIsGenerating(false);
+  //       }
+  //     }
+  //   }
+
+  //   if (activeTranscript.trim().length > 3) {
+  //     await generateSOAP();
+  //   }
+  // };
+  const stopSession = async () => {
+  setIsRecording(false);
+  mediaRecorderRef.current?.stop();
+
+  if (socketRef.current) {
+    socketRef.current.finish();
+    socketRef.current = null;
+  }
+
+  if (streamRef.current) {
+    streamRef.current.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  }
+
+  // Give Deepgram's final transcript event time to land in state
+  // before we read it (fixes truncated EN/TR transcripts on stop)
+  if (language === 'en' || language === 'tr') {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  let activeTranscript = transcript;
+
+  // For Arabic/Georgian, compile complete audio blob and transcribe cleanly on stop
+  if (language === 'ar' || language === 'ka') {
+    if (audioChunksRef.current.length > 0) {
+      setIsGenerating(true);
+      try {
+        const completeBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append('file', completeBlob, 'audio.webm');
+        formData.append('language', language);
+
+        const res = await fetch('/api/transcribe-chunk', {
+          method: 'POST',
+          body: formData,
+        });
+        const json = await res.json();
+        if (json.text) {
+          setTranscript(json.text.trim());
+          activeTranscript = json.text.trim();
         }
+      } catch (e) {
+        console.error("Full audio transcription error:", e);
+      } finally {
+        setIsGenerating(false);
       }
     }
+  }
 
-    if (activeTranscript.trim().length > 3) {
-      await generateSOAP();
-    }
-  };
+  if (activeTranscript.trim().length > 3) {
+    await generateSOAP(activeTranscript);
+  }
+};
 
   //   if (transcript.trim().length > 10 || audioChunksRef.current.length > 0) {
   //     // Small delay to let final transcript state flush if needed
@@ -361,7 +445,7 @@ function RecordContent() {
             {error ? (
               <div className="bg-red-50 border border-red-100 p-8 rounded-3xl text-center space-y-4 h-[650px] flex flex-col justify-center shadow-sm">
                 <p className="text-red-800 text-sm font-medium">{error}</p>
-                <button onClick={generateSOAP} className="bg-sage-primary text-white px-6 py-3 rounded-xl font-bold text-sm self-center hover:opacity-90 transition-all shadow-md">
+                <button onClick={() => generateSOAP()} className="bg-sage-primary text-white px-6 py-3 rounded-xl font-bold text-sm self-center hover:opacity-90 transition-all shadow-md">
                   Retry AI Generation
                 </button>
               </div>
