@@ -16,9 +16,9 @@ export async function POST(req: Request) {
     const arrayBuffer = await file.arrayBuffer();
 
     // Fallback chain for Arabic & Georgian REST transcription
-    const modelsToTry = 
-      language === 'ar' ? ['general', 'nova-3', 'nova-2'] :
-      language === 'ka' ? ['general', 'nova-2'] :
+    const modelsToTry =
+      language === 'ar' ? ['nova-3', 'nova-2'] :
+      language === 'ka' ? ['nova-2'] :
       ['nova-2'];
 
     let transcript = '';
