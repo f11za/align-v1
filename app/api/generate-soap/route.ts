@@ -99,7 +99,7 @@ export async function POST(req: Request) {
     const outputLang = langMap[language] || 'English';
 
     // 2. High-throughput Flash Model
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
 
     // 3. Prompt enforcing output language and SOAP structure
     const prompt = `
