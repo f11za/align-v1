@@ -79,18 +79,43 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// Helper for automatic exponential backoff retries on 503/429 errors
+async function generateWithRetry(model: any, prompt: string, maxRetries = 3) {
+  let delay = 1000; // start with 1s delay
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await model.generateContent(prompt);
+    } catch (error: any) {
+      const status = error?.status || error?.response?.status;
+      const msg = error?.message || '';
+
+      const isTransient = 
+        status === 503 || 
+        status === 429 || 
+        msg.includes('503') || 
+        msg.includes('429') || 
+        msg.includes('RESOURCE_EXHAUSTED');
+
+      if (isTransient && attempt < maxRetries) {
+        console.warn(`Gemini 503/429 spike on attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`);
+        await new Promise((res) => setTimeout(res, delay));
+        delay *= 2; // 1s -> 2s -> 4s
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const { transcript, language, patientName, specialty } = await req.json();
 
     if (!transcript) {
-      return NextResponse.json(
-        { message: "Transcript is required." },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "Transcript is required." }, { status: 400 });
     }
 
-    // 1. Explicit Language Mapping
     const langMap: Record<string, string> = { 
       tr: 'Turkish (Türkçe)', 
       ar: 'Arabic (العربية)', 
@@ -98,10 +123,8 @@ export async function POST(req: Request) {
     };
     const outputLang = langMap[language] || 'English';
 
-    // 2. High-throughput Flash Model
     const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
 
-    // 3. Prompt enforcing output language and SOAP structure
     const prompt = `
 You are an expert clinical scribe for Align. Generate a structured SOAP note (Subjective, Objective, Assessment, Plan) based on the provided encounter transcript.
 
@@ -123,29 +146,23 @@ Transcript:
 "${transcript}"
 `;
 
-    const result = await model.generateContent(prompt);
+    // Call Gemini using auto-retry
+    const result = await generateWithRetry(model, prompt);
     const responseText = result.response.text();
 
     return NextResponse.json({ soapNote: responseText });
 
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
+    console.error("Gemini Final Error:", error);
 
-    // Safely extract status codes and message details across different SDK versions
     const status = error?.status || error?.response?.status || 500;
-    const messageStr = error?.message || "";
-
-    const isRateLimited = 
-      status === 429 || 
-      status === 503 || 
-      messageStr.includes("429") || 
-      messageStr.includes("503") ||
-      messageStr.includes("RESOURCE_EXHAUSTED");
+    const msg = error?.message || '';
+    const isRateLimited = status === 429 || status === 503 || msg.includes('503') || msg.includes('429');
 
     return NextResponse.json(
       { 
         message: isRateLimited 
-          ? "Medical AI is under high demand. Please try again." 
+          ? "Medical AI is experiencing temporary high demand. Please retry in a few seconds." 
           : "AI processing failed. Please try again." 
       },
       { status: isRateLimited ? 429 : 500 }
