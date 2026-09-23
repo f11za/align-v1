@@ -42,6 +42,7 @@ function RecordContent() {
   const [loading, setLoading] = useState(false);
 
   const [language, setLanguage] = useState<'en' | 'tr' | 'ar' | 'ka'>('en');
+  const [noteLanguage, setNoteLanguage] = useState<'same' | 'en'>('same');
 
   const [isEdited, setIsEdited] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -97,6 +98,7 @@ function RecordContent() {
       body: JSON.stringify({ 
         transcript: activeTranscript,
         language,
+        noteLanguage,
         patientName: `${firstName} ${lastName}`,
         specialty,
       }),
@@ -401,6 +403,28 @@ function RecordContent() {
               ))}
             </div>
           )}
+
+          {!isRecording && (
+  <div className="flex flex-wrap justify-center items-center gap-3 mb-2">
+    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Note output:</span>
+    {[
+      { id: 'same', label: 'Same as spoken' },
+      { id: 'en', label: 'Always English' },
+    ].map((opt) => (
+      <button
+        key={opt.id}
+        onClick={() => setNoteLanguage(opt.id as 'same' | 'en')}
+        className={`px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm ${
+          noteLanguage === opt.id
+            ? 'bg-sage-primary text-white scale-105'
+            : 'bg-white border border-sage-border text-slate-400 hover:bg-slate-50'
+        }`}
+      >
+        {opt.label}
+      </button>
+    ))}
+  </div>
+)}
 
           <div className="bg-white border-2 border-sage-border rounded-3xl p-8 min-h-[400px] shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sage-light via-sage-primary to-sage-light opacity-50"></div>

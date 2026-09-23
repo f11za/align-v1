@@ -60,7 +60,7 @@ async function generateSOAPWithFallback(prompt: string) {
 
 export async function POST(req: Request) {
   try {
-    const { transcript, language, patientName, specialty } = await req.json();
+    const { transcript, language, noteLanguage, patientName, specialty } = await req.json();
 
     if (!transcript || transcript.length < 10) {
       return NextResponse.json(
@@ -75,7 +75,8 @@ export async function POST(req: Request) {
       ar: 'Arabic (العربية)', 
       ka: 'Georgian (ქართული)' 
     };
-    const outputLang = langMap[language] || 'English';
+    //const outputLang = langMap[language] || 'English';
+    const outputLang = noteLanguage === 'en' ? 'English' : (langMap[language] || 'English');
     const notDiscussedText = language === 'tr' ? 'Görüşülmedi' : 'Not discussed';
 
     const prompt = `
