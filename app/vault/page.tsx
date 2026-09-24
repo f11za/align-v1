@@ -1,23 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { getFormattedId } from '@/utils/patient'
 
 export default function PatientVault() {
   const [notes, setNotes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('') // --- NEW SEARCH STATE ---
   const supabase = createClient()
-
-  // --- HELPER FUNCTION ---
-  const getFormattedId = (name: string, uuid: string) => {
-    const safeUuid = uuid || '000000';
-    const randomStr = safeUuid.substring(0, 6).toUpperCase()
-    
-    if (!name || name.trim() === '') return `UNKNOWN_PATIENT_${randomStr}`
-    
-    const formattedName = name.trim().replace(/\s+/g, '_').toLowerCase()
-    return `${formattedName}_${randomStr}`
-  }
 
   // --- PRINT FUNCTION ---
   const handlePrint = (note: any) => {
