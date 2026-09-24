@@ -127,6 +127,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { getFormattedId } from '@/utils/patient'
 import { useRouter } from 'next/navigation'
 
 export default function Dashboard() {
@@ -159,7 +160,7 @@ export default function Dashboard() {
       // Recent 5, for the list display only
       const { data, error } = await supabase
         .from('soap_notes')
-        .select('id, created_at, raw_ai_output')
+        .select('*, patients(first_name, last_name)')
         .eq('practitioner_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5)
@@ -227,14 +228,19 @@ export default function Dashboard() {
 
         <div className="divide-y divide-sage-border">
           {encounters.length > 0 ? (
-            encounters.map((note, index) => (
+            encounters.map((note) => (
               <div
                 key={note.id}
                 className="p-6 hover:bg-slate-50 transition-colors"
               >
                 <div className="flex justify-between mb-2">
-                  <h3 className="font-bold text-slate-800">
-                    Encounter #{encounters.length - index}
+                  <h3 className="font-bold text-slate-800 font-mono text-sm">
+                    {getFormattedId(
+                      `${note.patients?.first_name || ''} ${
+                        note.patients?.last_name || ''
+                      }`.trim(),
+                      note.patient_id || note.id
+                    )}
                   </h3>
                   <span className="text-[10px] text-slate-400 font-bold uppercase">
                     {new Date(note.created_at).toLocaleDateString()}
