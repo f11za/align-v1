@@ -61,6 +61,9 @@ function RecordContent() {
 
   const [isEdited, setIsEdited] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+
+  const [showSignOffModal, setShowSignOffModal] = useState(false);
+  const [signature, setSignature] = useState("");
   
   const socketRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -169,7 +172,15 @@ function RecordContent() {
     }
   };
 
-  const handleSave = async () => {
+  const handleConfirmSignOff = async () => {
+    const signedName = signature.trim();
+    if (!signedName) return;
+
+    setShowSignOffModal(false);
+    await handleSave(signedName);
+  };
+
+  const handleSave = async (practitionerSignature: string) => {
     if (!soapNote) return;
     setLoading(true);
 
@@ -185,6 +196,8 @@ function RecordContent() {
             raw_ai_output: soapNote,
             patient_id: patientId,
             is_edited: isEdited,
+            practitioner_signature: practitionerSignature,
+            signed_at: new Date().toISOString(),
             icd10_codes: billingCodes.filter((c) => c.type === 'ICD-10'),
             cpt_codes: billingCodes.filter((c) => c.type === 'CPT'),
             subjective: "Transcribed session",
@@ -632,7 +645,7 @@ function RecordContent() {
                   )}
 
                   <button 
-                    onClick={handleSave}
+                    onClick={() => setShowSignOffModal(true)}
                     disabled={loading}
                     className="flex-[2] bg-sage-primary text-white py-4 rounded-2xl font-bold shadow-md hover:bg-sage-dark transition-all disabled:bg-slate-300 text-sm transform active:scale-[0.98]"
                   >
@@ -648,6 +661,51 @@ function RecordContent() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {showSignOffModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+          <div className="bg-white w-full max-w-md rounded-3xl border border-sage-border shadow-xl p-8 space-y-5">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">Clinical Sign-Off</h2>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Required before archiving to the vault</p>
+            </div>
+
+            <p className="text-sm text-slate-700 leading-relaxed bg-sage-primary/5 border border-sage-primary/20 rounded-2xl p-4">
+              I attest that I have reviewed and verified this AI-generated clinical note.
+            </p>
+
+            <div className="space-y-2">
+              <label htmlFor="signature" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Type your full name to sign
+              </label>
+              <input
+                id="signature"
+                value={signature}
+                onChange={(e) => setSignature(e.target.value)}
+                placeholder="Dr. Jane Doe"
+                autoFocus
+                className="w-full px-4 py-3 bg-white border border-sage-border rounded-2xl text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sage-primary focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setShowSignOffModal(false)}
+                className="flex-1 bg-white border border-sage-border text-slate-500 py-3.5 rounded-2xl font-bold hover:bg-slate-50 transition-all text-sm shadow-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmSignOff}
+                disabled={!signature.trim() || loading}
+                className="flex-[2] bg-sage-primary text-white py-3.5 rounded-2xl font-bold shadow-md hover:bg-sage-dark transition-all disabled:bg-slate-300 disabled:shadow-none text-sm transform active:scale-[0.98]"
+              >
+                Confirm &amp; Save
+              </button>
+            </div>
           </div>
         </div>
       )}
