@@ -2,9 +2,9 @@
 
 **AI-powered clinical documentation for multilingual healthcare.**
 
-Align listens to ambient doctor-patient conversations and converts them into structured, editable clinical notes in real time — reducing documentation workload so doctors can focus on the patient, not the keyboard.
+Align listens to ambient doctor-patient conversations and converts them into structured, editable clinical notes in real time, reducing documentation workload so doctors can focus on the patient, not the keyboard.
 
-Built for the reality of Gulf healthcare: consultations happen in English, Arabic, Turkish, and Georgian, often within the same clinic. Most ambient scribes are tuned for English-only encounters — Align isn't.
+Built for the reality of Gulf healthcare: consultations happen in English, Arabic, Turkish, and Georgian, often within the same clinic. Most ambient scribes are tuned for English-only encounters, Align isn't.
 
 ## Features
 
