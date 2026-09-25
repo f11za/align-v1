@@ -1,9 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { getFormattedId } from '@/utils/patient'
 
 export default function PatientVault() {
+  const router = useRouter()
   const [notes, setNotes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('') // --- NEW SEARCH STATE ---
@@ -129,7 +131,11 @@ export default function PatientVault() {
               const patientFullName = `${fName} ${lName}`.trim();
 
               return (
-                <tr key={note.id} className="hover:bg-slate-50 transition-colors">
+                <tr
+                  key={note.id}
+                  onClick={() => router.push(`/vault/${note.id}`)}
+                  className="hover:bg-slate-50 transition-colors cursor-pointer"
+                >
                   <td className="px-8 py-6 text-slate-600 font-medium">
                     {new Date(note.created_at).toLocaleDateString('en-AE', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </td>
@@ -145,7 +151,10 @@ export default function PatientVault() {
 
                   <td className="px-8 py-6 text-right">
                     <button 
-                      onClick={() => handlePrint(note)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handlePrint(note)
+                      }}
                       className="text-sage-primary font-bold hover:text-sage-dark transition-colors text-sm bg-sage-light/20 px-4 py-2 rounded-lg"
                     >
                       Download PDF
