@@ -71,6 +71,22 @@ function RecordContent() {
     if (!isEdited) setIsEdited(true);
   };
 
+  const handleBillingCodeChange = (
+    index: number,
+    field: 'code' | 'description',
+    value: string
+  ) => {
+    setBillingCodes((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+    if (!isEdited) setIsEdited(true);
+  };
+
+  const handleRemoveBillingCode = (index: number) => {
+    setBillingCodes((prev) => prev.filter((_, i) => i !== index));
+    if (!isEdited) setIsEdited(true);
+  };
+
   // const generateSOAP = async () => {
   //   setIsGenerating(true);
   //   setError(null);
@@ -537,20 +553,58 @@ function RecordContent() {
             )}
 
             {!error && billingCodes.length > 0 && (
-              <div className="bg-white border border-sage-border rounded-3xl p-5 mt-4 shadow-sm">
-                <h3 className="font-bold text-slate-400 uppercase text-[11px] tracking-[0.15em] mb-3">
-                  Suggested Billing Codes
-                </h3>
+              <div className={`rounded-3xl p-5 mt-4 shadow-sm transition-all duration-300 ${isEditMode ? 'bg-amber-50/40 ring-2 ring-amber-300' : 'bg-white border border-sage-border'}`}>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-bold text-slate-400 uppercase text-[11px] tracking-[0.15em]">
+                    Suggested Billing Codes
+                  </h3>
+                  {isEditMode && (
+                    <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider animate-pulse">● Editing Mode</span>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {billingCodes.map((item, i) => (
                     <span
-                      key={`${item.code}-${i}`}
+                      key={i}
                       title={`${item.type} · ${item.confidence} confidence`}
-                      className={`px-3.5 py-1.5 rounded-full border text-xs font-bold shadow-sm ${CONFIDENCE_STYLES[item.confidence]}`}
+                      className={`flex items-center px-3.5 py-1.5 rounded-full border text-xs font-bold shadow-sm ${
+                        isEditMode
+                          ? 'bg-white border-amber-200 text-slate-700'
+                          : CONFIDENCE_STYLES[item.confidence]
+                      }`}
                     >
-                      {item.code}
-                      {item.description && (
-                        <span className="ml-2 font-medium opacity-80">{item.description}</span>
+                      {isEditMode ? (
+                        <>
+                          <input
+                            value={item.code}
+                            onChange={(e) => handleBillingCodeChange(i, 'code', e.target.value)}
+                            size={Math.max(item.code.length, 4)}
+                            aria-label={`${item.type} code`}
+                            className="bg-transparent outline-none font-bold text-slate-800"
+                          />
+                          <input
+                            value={item.description}
+                            onChange={(e) => handleBillingCodeChange(i, 'description', e.target.value)}
+                            size={Math.max(item.description.length, 12)}
+                            placeholder="Description"
+                            aria-label={`${item.code} description`}
+                            className="ml-2 bg-transparent outline-none font-medium text-slate-600"
+                          />
+                          <button
+                            onClick={() => handleRemoveBillingCode(i)}
+                            aria-label={`Remove ${item.code}`}
+                            className="ml-2 text-amber-500 hover:text-red-500 transition-colors leading-none"
+                          >
+                            ×
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {item.code}
+                          {item.description && (
+                            <span className="ml-2 font-medium opacity-80">{item.description}</span>
+                          )}
+                        </>
                       )}
                     </span>
                   ))}
