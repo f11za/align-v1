@@ -5,6 +5,19 @@ import { createClient as createDeepgramClient, LiveTranscriptionEvents } from "@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient as createSupabaseClient } from '@/utils/supabase/client'; 
 
+type BillingCode = {
+  code: string;
+  type: 'ICD-10' | 'CPT';
+  description: string;
+  confidence: 'high' | 'medium' | 'low';
+};
+
+const CONFIDENCE_STYLES: Record<BillingCode['confidence'], string> = {
+  high: 'bg-sage-primary/15 text-sage-primary border-sage-primary/30',
+  medium: 'bg-sage-primary/5 text-sage-primary/80 border-sage-primary/20',
+  low: 'bg-slate-100 text-slate-400 border-slate-200',
+};
+
 const formatSoapText = (text: string) => {
   if (!text) return null;
   return text.split('\n').map((line, i) => {
@@ -43,6 +56,8 @@ function RecordContent() {
 
   const [language, setLanguage] = useState<'en' | 'tr' | 'ar' | 'ka'>('en');
   const [noteLanguage, setNoteLanguage] = useState<'same' | 'en'>('same');
+
+  const [billingCodes, setBillingCodes] = useState<BillingCode[]>([]);
 
   const [isEdited, setIsEdited] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -111,6 +126,7 @@ function RecordContent() {
 
     const data = await response.json();
     setSoapNote(data.soapNote);
+    extractBillingCodes(data.soapNote);
   } catch (err: any) {
     console.error(err);
     setError(err.message || "Medical AI is under high demand. Please try again.");
@@ -118,6 +134,24 @@ function RecordContent() {
     setIsGenerating(false);
   }
 };
+
+  // Billing extraction is best-effort: failures never block the note itself
+  const extractBillingCodes = async (note: string) => {
+    try {
+      const response = await fetch('/api/extract-billing', {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ soapNote: note, specialty }),
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      setBillingCodes(Array.isArray(data.codes) ? data.codes : []);
+    } catch (err) {
+      console.error("Billing extraction error:", err);
+    }
+  };
 
   const handleSave = async () => {
     if (!soapNote) return;
@@ -135,6 +169,8 @@ function RecordContent() {
             raw_ai_output: soapNote,
             patient_id: patientId,
             is_edited: isEdited,
+            icd10_codes: billingCodes.filter((c) => c.type === 'ICD-10'),
+            cpt_codes: billingCodes.filter((c) => c.type === 'CPT'),
             subjective: "Transcribed session",
             objective: "See raw output",
             assessment: "See raw output",
@@ -500,6 +536,28 @@ function RecordContent() {
               </div>
             )}
 
+            {!error && billingCodes.length > 0 && (
+              <div className="bg-white border border-sage-border rounded-3xl p-5 mt-4 shadow-sm">
+                <h3 className="font-bold text-slate-400 uppercase text-[11px] tracking-[0.15em] mb-3">
+                  Suggested Billing Codes
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {billingCodes.map((item, i) => (
+                    <span
+                      key={`${item.code}-${i}`}
+                      title={`${item.type} · ${item.confidence} confidence`}
+                      className={`px-3.5 py-1.5 rounded-full border text-xs font-bold shadow-sm ${CONFIDENCE_STYLES[item.confidence]}`}
+                    >
+                      {item.code}
+                      {item.description && (
+                        <span className="ml-2 font-medium opacity-80">{item.description}</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {!error && (
               <>
                 <div className="flex gap-3 mt-4">
@@ -529,7 +587,7 @@ function RecordContent() {
                 </div>
 
                 <button 
-                  onClick={() => {setSoapNote(""); setTranscript(""); setError(null); setIsEdited(false); setIsEditMode(false);}}
+                  onClick={() => {setSoapNote(""); setTranscript(""); setError(null); setIsEdited(false); setIsEditMode(false); setBillingCodes([]);}}
                   className="w-full py-3 mt-2 rounded-xl font-bold text-slate-400 hover:bg-slate-100 hover:text-red-500 transition-all text-xs uppercase tracking-wider"
                 >
                   Discard Encounter
