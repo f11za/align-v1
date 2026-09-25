@@ -1,9 +1,28 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
+import { Suspense, use, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { BillingCode, CONFIDENCE_STYLES, formatSoapText } from '@/utils/soap'
+
+function BackLinkContent({ className }: { className: string }) {
+  const fromVault = useSearchParams().get('from') === 'vault'
+
+  return (
+    <Link href={fromVault ? '/vault' : '/dashboard'} className={className}>
+      ← Back to {fromVault ? 'Vault' : 'Dashboard'}
+    </Link>
+  )
+}
+
+function BackLink({ className }: { className: string }) {
+  return (
+    <Suspense fallback={<span className={className}>← Back to Dashboard</span>}>
+      <BackLinkContent className={className} />
+    </Suspense>
+  )
+}
 
 export default function EncounterDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -34,9 +53,7 @@ export default function EncounterDetail({ params }: { params: Promise<{ id: stri
     return (
       <div className="max-w-3xl mx-auto p-20 text-center space-y-3">
         <p className="font-bold text-slate-700">Encounter not found</p>
-        <Link href="/dashboard" className="text-sage-primary font-bold text-sm hover:underline">
-          Back to dashboard
-        </Link>
+        <BackLink className="text-sage-primary font-bold text-sm hover:underline" />
       </div>
     )
   }
@@ -51,9 +68,7 @@ export default function EncounterDetail({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">
-      <Link href="/dashboard" className="inline-block text-slate-400 hover:text-sage-primary text-xs font-bold uppercase tracking-wider transition-colors">
-        ← Back to dashboard
-      </Link>
+      <BackLink className="inline-block text-slate-400 hover:text-sage-primary text-xs font-bold uppercase tracking-wider transition-colors" />
 
       <div>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">
