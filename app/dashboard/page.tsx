@@ -128,6 +128,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { getFormattedId } from '@/utils/patient'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 export default function Dashboard() {
@@ -229,9 +230,10 @@ export default function Dashboard() {
         <div className="divide-y divide-sage-border">
           {encounters.length > 0 ? (
             encounters.map((note) => (
-              <div
+              <Link
                 key={note.id}
-                className="p-6 hover:bg-slate-50 transition-colors"
+                href={`/vault/${note.id}`}
+                className="block p-6 hover:bg-slate-50 transition-colors"
               >
                 <div className="flex justify-between mb-2">
                   <h3 className="font-bold text-slate-800 font-mono text-sm">
@@ -254,7 +256,7 @@ export default function Dashboard() {
                     'No SOAP note preview available'}
                   ...
                 </p>
-              </div>
+              </Link>
             ))
           ) : (
             <div className="p-6 text-center">
