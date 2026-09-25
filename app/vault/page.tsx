@@ -133,7 +133,7 @@ export default function PatientVault() {
               return (
                 <tr
                   key={note.id}
-                  onClick={() => router.push(`/vault/${note.id}`)}
+                  onClick={() => router.push(`/vault/${note.id}?from=vault`)}
                   className="hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   <td className="px-8 py-6 text-slate-600 font-medium">
